@@ -9,7 +9,10 @@ namespace ServerModel
     public class Message
     {
         public MessageType MessageType { get; set; }
-        public Task Task { get; set; }
+        //public TaskType Task { get; set; }
         public string Data { get; set; }
+        public int ToClient { get; set; }
+        public int NumberOfClients { get; set; }
+        //public Dictionary<int, string> IpDictionary { get; set; } 
     }
 }

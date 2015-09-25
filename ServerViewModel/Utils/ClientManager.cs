@@ -49,7 +49,8 @@ namespace ServerViewModel.Utils
         public void ConnectToClient()
         {
             SenderUdpClient.Connect(_clientIp, _clientPort);
-            RecieverUdpClient.Connect(_clientIp, _clientPort);
+            RecieverUdpClient.Connect(_clientIp, _clientPort+1);
+            RecieverUdpClient.Client.ReceiveBufferSize = 200000;
         }
 
         public void SendData(string data)
