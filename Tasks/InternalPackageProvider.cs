@@ -31,10 +31,22 @@ namespace Tasks
         {
             while (true)
             {
-                byte[] byteData;
                 var ep = new IPEndPoint(IPAddress.Any, 0);
-                byteData = ProviderUdpClient.Receive(ref ep);
-                var strData = Encoding.ASCII.GetString(byteData);
+                byte[] bytes = { };
+                byte[] rec = { };
+                var strrec = "";
+                while (strrec != "000")
+                {
+                    rec = ProviderUdpClient.Receive(ref ep);
+                    strrec = Encoding.ASCII.GetString(rec);
+                    if (strrec != "000")
+                    {
+                        bytes = bytes.Concat(rec).ToArray();
+                    }
+
+                }
+
+                var strData = Encoding.ASCII.GetString(bytes);
                 Message message;
                 using (TextReader reader = new StringReader(strData))
                 {

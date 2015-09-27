@@ -24,6 +24,7 @@ namespace Client
         private static UdpClient clientToSend;
         public static Dictionary<int, IPEndPoint> IpEndPoints;
         public static IPEndPoint ServerEndPoint;
+        private static byte[] emptymess = Encoding.ASCII.GetBytes("000");
         static void Main(string[] args)
         {
             int port;
@@ -55,6 +56,7 @@ namespace Client
                         var messageToSend =
                             Encoding.ASCII.GetBytes(FormMessage(MessageType.ConnectionCheckFromClient, "",TaskType.Default,0,0));
                         clientToSend.Send(messageToSend, messageToSend.Length, anyIpEP.Address.ToString(),anyIpEP.Port+1);
+                        clientToSend.Send(emptymess, emptymess.Length, anyIpEP.Address.ToString(), anyIpEP.Port + 1);
                         break;
 
                     case MessageType.FromServerWithTask:
@@ -106,19 +108,54 @@ namespace Client
             var message = FormMessage(MessageType.FromClientWithResult, pack.Data, TaskType.Default, pack.From, 0);
             var bytemes = Encoding.ASCII.GetBytes(message);
 
-            if(bytemes.Length>65536)
+            if (bytemes.Length <= 65536)
+            {
+                clientToSend.Send(bytemes, bytemes.Length, ServerEndPoint.Address.ToString(), ServerEndPoint.Port);
+                clientToSend.Send(emptymess, emptymess.Length, ServerEndPoint.Address.ToString(), ServerEndPoint.Port);
+            }
 
-            clientToSend.Send(bytemes, bytemes.Length, ServerEndPoint.Address.ToString(), ServerEndPoint.Port);
+            if (bytemes.Length > 65536)
+            {
+                List<byte[]> bytelist= new List<byte[]>();
+                for (int i = 0; i < bytemes.Length; i += 65000)
+                {
+                    var take = 65000 >= bytemes.Length - i ? bytemes.Length - i : 65000;
+                   clientToSend.Send(bytemes.Skip(i).Take(take).ToArray(),take, ServerEndPoint.Address.ToString(), ServerEndPoint.Port);
+                }
+                clientToSend.Send(emptymess, emptymess.Length, ServerEndPoint.Address.ToString(), ServerEndPoint.Port);
+            }
+
+            
         }
 
         private static void SendToClient(object sender, EventArgs e)
         {
             var pack = ((IParallelableTask) sender).PackageToSend;
             var message = FormMessage(MessageType.FromClientToClient, pack.Data, TaskType.Default, pack.To, 0);
-            var byteMessage = Encoding.ASCII.GetBytes(message);
+            var bytemes = Encoding.ASCII.GetBytes(message);
             var ipep = IpEndPoints[pack.To];
             clientToSend.Connect(ipep);
-            clientToSend.Send(byteMessage, byteMessage.Length);
+            //clientToSend.Send(byteMessage, byteMessage.Length);
+
+
+            if (bytemes.Length <= 65536)
+            {
+                clientToSend.Send(bytemes, bytemes.Length);
+                clientToSend.Send(emptymess, emptymess.Length);
+            }
+
+            if (bytemes.Length > 65536)
+            {
+                List<byte[]> bytelist = new List<byte[]>();
+                for (int i = 0; i < bytemes.Length; i += 65000)
+                {
+                    var take = 65000 >= bytemes.Length - i ? bytemes.Length - i : 65000;
+                    clientToSend.Send(bytemes.Skip(i).Take(take).ToArray(), take);
+                }
+                clientToSend.Send(emptymess, emptymess.Length);
+            }
+
+
         }
 
         public static string FormMessage(MessageType type, string data, TaskType task, int num, int clnum)

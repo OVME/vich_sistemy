@@ -63,7 +63,19 @@ namespace ServerViewModel.Utils
         {
             while (true)
             {
-                var bytes = RecieverUdpClient.Receive(ref _clientEndPoint);
+                byte[] bytes={};
+                byte[] rec = {};
+                var strrec = "";
+                while (strrec!= "000")
+                {
+                    rec = RecieverUdpClient.Receive(ref _clientEndPoint);
+                    strrec = Encoding.ASCII.GetString(rec);
+                    if (strrec != "000")
+                    {
+                        bytes = bytes.Concat(rec).ToArray();
+                    }
+
+                }
                 RecievedData = Encoding.ASCII.GetString(bytes);
                 MessageRecieved();
             }
